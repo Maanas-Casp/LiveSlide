@@ -19,12 +19,6 @@ These accounts and all seeded records are synthetic and for local development on
 
 The 1 km EPSG:4326 grid is an approximation: latitude spacing is `1 / 111.32` degrees and longitude spacing is computed at the region centre as `1 / (111.32 × cos(latitude))`. Cell area varies slightly; use projected geometry for area calculations. The demo grid uses 30 rows by 30 columns to match the requested synthetic region, so its cell spacing is approximate.
 
-## Ownership map from the build plan
-
-- `infra/`, `services/api/`, root files and CI: Arhaan
-- `services/model/`, `data/`, evaluation and source docs: Maanas
-- `services/agents/`, `apps/field/`: Prabal
-- `apps/web/`: Kunal
 
 The contracts are initial drafts inferred from the build PDF because the shared contract files were not in the repository. Have the team review `contracts/` before integrating changes.
 

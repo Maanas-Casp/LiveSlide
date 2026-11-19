@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liveslide.invalid/contracts/alert_facts.schema.json",
+  "title": "Liveslide alert facts",
+  "description": "Initial contract inferred from Liveslide_Build_Prompts_Detailed.pdf; review with the team before integration.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cell_ids", "cell_count", "risk_p", "risk_band", "area_names", "road_names", "valid_from", "valid_until", "recommended_action"],
+  "properties": {
+    "cell_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[A-Z]{2}-[0-9]{4}-[0-9]{4}$"}},
+    "cell_count": {"type": "integer", "minimum": 1},
+    "risk_p": {"type": "number", "minimum": 0, "maximum": 1},
+    "risk_band": {"enum": ["low", "moderate", "high"]},
+    "area_names": {"type": "array", "items": {"type": "string"}},
+    "road_names": {"type": "array", "items": {"type": "string"}},
+    "valid_from": {"type": "string", "format": "date-time"},
+    "valid_until": {"type": "string", "format": "date-time"},
+    "recommended_action": {"enum": ["stay_alert", "avoid_slopes_and_roads", "prepare_to_move"]},
+    "synthetic": {"type": "boolean", "description": "True when this alert was generated from demo or synthetic input data."}
+  }
+}

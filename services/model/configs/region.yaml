@@ -1,0 +1,22 @@
+# Provisional software fixture only. Do not use these synthetic coordinates or dates for research.
+region_name: AS-DEMO-SYNTHETIC
+state_code: AS
+bbox: [91.6, 26.0, 91.9, 26.3]
+start_date: "2024-01-01"
+end_date: "2025-12-31"
+final_season_start: "2025-06-01"
+grid_size_km: 1
+label_buffer_m: 1000
+label_window_days: 3
+spatial_block_km: 20
+random_seed: 26001
+negative_sampling_ratio: 10
+rain_day_cutoff_mm: 1.0
+synthetic: true
+real_data_enabled: false
+imerg_short_name: GPM_3IMERGDF
+imerg_version: "07"
+smap_short_name: SPL4SMGP
+smap_version: "008"
+dem_short_name: SRTMGL1
+dem_version: "003"

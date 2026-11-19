@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: liveslide
+      POSTGRES_USER: liveslide
+      POSTGRES_PASSWORD: liveslide
+    volumes:
+      - liveslide-db:/var/lib/postgresql/data
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liveslide -d liveslide"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  api:
+    build: ../services/api
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://liveslide:liveslide@db:5432/liveslide
+      PHOTO_STORAGE_DIR: /app/data/photos
+      AGENTS_URL: http://agents:8100
+    volumes:
+      - liveslide-photos:/app/data/photos
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      db: {condition: service_healthy}
+  agents:
+    build: ../services/agents
+    env_file: ../.env
+    environment:
+      API_URL: http://api:8000/api/v1
+      AGENTS_DB: /app/data/agents.sqlite
+      DISPATCH_LOG: /app/data/mock_dispatch.jsonl
+    volumes:
+      - liveslide-agents:/app/data
+    ports: ["8100:8100"]
+    depends_on:
+      api: {condition: service_healthy}
+  web:
+    build: ../apps/web
+    environment:
+      API_INTERNAL_URL: http://api:8000/api/v1
+      NEXT_PUBLIC_API_BASE: /api/v1
+      MAP_STYLE_URL: ${MAP_STYLE_URL:-}
+    ports: ["3000:3000"]
+    depends_on: [api]
+  labelstudio:
+    image: heartexlabs/label-studio:1.16.0
+    ports: ["8080:8080"]
+    volumes:
+      - liveslide-labelstudio:/label-studio/data
+volumes:
+  liveslide-db:
+  liveslide-photos:
+  liveslide-agents:
+  liveslide-labelstudio:

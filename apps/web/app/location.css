@@ -1,0 +1,1 @@
+.locationHelp{display:block;color:var(--muted);font-size:10px;line-height:1.5}.coordinateDetails{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fafbfa}.coordinateDetails summary{cursor:pointer;color:#59675f;font-size:11px;font-weight:700}.coordinateDetails[open] summary{margin-bottom:12px}

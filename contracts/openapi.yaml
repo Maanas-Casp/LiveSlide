@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: Liveslide API
+  version: 0.1.0
+  description: Initial API contract inferred from the project build PDF. Team review is required before production integration.
+servers:
+  - url: http://localhost:8000/api/v1
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      responses:
+        '200': {description: Service health}
+  /auth/login:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [email, password], properties: {email: {type: string, format: email}, password: {type: string}}}
+      responses:
+        '200': {description: Access token}
+        '401': {$ref: '#/components/responses/Error'}
+  /auth/me:
+    get:
+      responses:
+        '200': {description: Current user identity and role}
+        '401': {$ref: '#/components/responses/Error'}
+  /cells:
+    get:
+      parameters:
+        - {in: query, name: bbox, required: true, schema: {type: string, example: '91.6,26.0,91.9,26.3'}}
+        - {in: query, name: limit, schema: {type: integer, minimum: 1, maximum: 10000, default: 5000}}
+      responses:
+        '200': {description: GeoJSON FeatureCollection}
+        '422': {$ref: '#/components/responses/Error'}
+  /cells/{cell_id}:
+    get:
+      parameters: [{$ref: '#/components/parameters/CellId'}]
+      responses:
+        '200': {description: Cell with latest score}
+        '404': {$ref: '#/components/responses/Error'}
+  /cells/{cell_id}/features:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/CellId'}
+        - {in: query, name: days, schema: {type: integer, minimum: 1, maximum: 365, default: 14}}
+      responses: {'200': {description: Daily features}}
+  /cells/{cell_id}/context:
+    get:
+      parameters:
+        - {$ref: '#/components/parameters/CellId'}
+        - {in: query, name: radius_km, schema: {type: number, minimum: 0, maximum: 100, default: 3}}
+      responses: {'200': {description: Terrain, roads, settlements and recent events}}
+  /cells/{cell_id}/agent-run:
+    post:
+      parameters: [{$ref: '#/components/parameters/CellId'}]
+      responses:
+        '202': {description: Agent workflow started from the latest non-synthetic score}
+        '409': {$ref: '#/components/responses/Error'}
+        '502': {$ref: '#/components/responses/Error'}
+        '503': {$ref: '#/components/responses/Error'}
+  /features:
+    post:
+      security: [{serviceKey: []}]
+      requestBody: {$ref: '#/components/requestBodies/FeatureBatch'}
+      responses: {'200': {description: Upsert count}}
+  /scores:
+    post:
+      security: [{serviceKey: []}]
+      requestBody: {$ref: '#/components/requestBodies/ScoreBatch'}
+      responses: {'200': {description: Upsert count}}
+  /cells/static:
+    post:
+      security: [{serviceKey: []}]
+      requestBody: {$ref: '#/components/requestBodies/StaticBatch'}
+      responses: {'200': {description: Upsert count}}
+  /events:
+    get:
+      parameters:
+        - {in: query, name: bbox, schema: {type: string}}
+        - {in: query, name: limit, schema: {type: integer, default: 100}}
+      responses: {'200': {description: Landslide events}}
+    post:
+      security: [{serviceKey: []}]
+      requestBody: {$ref: '#/components/requestBodies/EventBatch'}
+      responses: {'200': {description: Upsert count}}
+  /reports:
+    get:
+      responses: {'200': {description: Reports visible to the caller}}
+    post:
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              description: Provide either both coordinates or a place name. Place-name-only reports are marked for location verification.
+              required: [client_report_id, captured_at, photo]
+              properties:
+                client_report_id: {type: string, format: uuid}
+                device_id: {type: string}
+                lat: {type: number}
+                lon: {type: number}
+                location_name: {type: string, maxLength: 300}
+                captured_at: {type: string, format: date-time}
+                note: {type: string, maxLength: 500}
+                photo: {type: string, format: binary}
+      responses:
+        '201': {description: Report received}
+        '200': {description: Idempotent duplicate}
+        '413': {$ref: '#/components/responses/Error'}
+        '415': {$ref: '#/components/responses/Error'}
+  /reports/{report_id}/photo:
+    get:
+      parameters: [{in: path, name: report_id, required: true, schema: {type: string}}]
+      responses: {'200': {description: Report photo}}
+  /reports/{report_id}/review:
+    post:
+      parameters: [{in: path, name: report_id, required: true, schema: {type: string}}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, required: [decision], properties: {decision: {enum: [accepted, rejected]}, note: {type: string}}}
+      responses: {'200': {description: Review recorded}, '403': {$ref: '#/components/responses/Error'}}
+  /alerts:
+    get:
+      parameters: [{in: query, name: status, schema: {enum: [draft, approved, rejected, dispatched]}}]
+      responses: {'200': {description: Alerts}}
+  /alerts/drafts:
+    post:
+      security: [{serviceKey: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [run_id, facts, texts]
+              properties: {run_id: {type: string}, facts: {type: object}, texts: {type: object}}
+      responses: {'201': {description: Draft created}}
+  /alerts/{alert_id}/approve:
+    post:
+      parameters: [{in: path, name: alert_id, required: true, schema: {type: string}}]
+      responses: {'200': {description: Approved}, '409': {$ref: '#/components/responses/Error'}}
+  /alerts/{alert_id}/reject:
+    post:
+      parameters: [{in: path, name: alert_id, required: true, schema: {type: string}}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [reason], properties: {reason: {type: string, minLength: 1}}}}}
+      responses: {'200': {description: Rejected}, '409': {$ref: '#/components/responses/Error'}}
+  /audit/verify:
+    get:
+      responses: {'200': {description: Audit chain status}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+    serviceKey: {type: apiKey, in: header, name: X-Service-Key}
+  parameters:
+    CellId: {in: path, name: cell_id, required: true, schema: {type: string, pattern: '^[A-Z]{2}-[0-9]{4}-[0-9]{4}$'}}
+  responses:
+    Error:
+      description: Standard error response
+      content: {application/json: {schema: {type: object, properties: {error: {type: object, required: [code, message], properties: {code: {type: string}, message: {type: string}}}}}}}
+  requestBodies:
+    FeatureBatch: {required: true, content: {application/json: {schema: {type: array, maxItems: 10000, items: {type: object}}}}}
+    ScoreBatch: {required: true, content: {application/json: {schema: {type: array, maxItems: 10000, items: {type: object}}}}}
+    StaticBatch: {required: true, content: {application/json: {schema: {type: array, maxItems: 10000, items: {type: object}}}}}
+    EventBatch: {required: true, content: {application/json: {schema: {type: array, maxItems: 10000, items: {type: object}}}}}

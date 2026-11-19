@@ -1,0 +1,1 @@
+Evaluation outputs are generated per run and are not committed. Keep only this README in version control. Never place raw source data, credentials, or research outputs here unless the team has approved their handling.
